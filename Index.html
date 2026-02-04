@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Directory Search | ระบบค้นหารายชื่อ</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Sarabun', sans-serif; }
+        .search-gradient {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <div class="search-gradient text-white pb-32 pt-12 px-4 text-center">
+        <h1 class="text-4xl font-bold mb-4">ระบบค้นหาเบอร์โทรศัพท์และรายชื่อ</h1>
+        <p class="opacity-80">ค้นหาข้อมูลบุคลากร แผนก หรือตำแหน่งงานได้ทันที</p>
+    </div>
+
+    <div class="max-w-5xl mx-auto px-4 -mt-24">
+        
+        <div class="bg-white rounded-xl shadow-xl p-6 mb-8">
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </span>
+                <input type="text" id="searchInput" 
+                    class="block w-full pl-12 pr-4 py-4 border border-gray-200 rounded-full text-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all shadow-inner"
+                    placeholder="ใส่ชื่อ, แผนก, หรือคำสำคัญที่ต้องการค้นหา...">
+            </div>
+            <div id="resultCount" class="mt-4 text-sm text-gray-500 italic text-right">
+                กำลังโหลดข้อมูล...
+            </div>
+        </div>
+
+        <div id="resultsArea" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            </div>
+
+        <div id="noData" class="hidden text-center py-20">
+            <div class="text-6xl mb-4">🔍</div>
+            <h3 class="text-xl font-semibold text-gray-600">ไม่พบข้อมูลที่คุณกำลังมองหา</h3>
+            <p class="text-gray-400">ลองเปลี่ยนคำค้นหา หรือตรวจสอบตัวสะกดอีกครั้ง</p>
+        </div>
+
+    </div>
+
+    <script>
+        let directoryData = [];
+
+        // 1. ฟังก์ชันดึงข้อมูลจากไฟล์ JSON
+        async function fetchDirectory() {
+            try {
+                // สมมติว่าไฟล์ชื่อ data.json อยู่โฟลเดอร์เดียวกัน
+                const response = await fetch('data.json');
+                directoryData = await response.json();
+                renderData(directoryData);
+                updateCount(directoryData.length);
+            } catch (error) {
+                console.error("Error loading data:", error);
+                document.getElementById('resultCount').innerText = "ไม่สามารถโหลดข้อมูลได้";
+            }
+        }
+
+        // 2. ฟังก์ชันแสดงผลการค้นหา
+        function renderData(items) {
+            const resultsArea = document.getElementById('resultsArea');
+            const noData = document.getElementById('noData');
+            
+            if (items.length === 0) {
+                resultsArea.innerHTML = '';
+                noData.classList.remove('hidden');
+                return;
+            }
+
+            noData.classList.add('hidden');
+            resultsArea.innerHTML = items.map(item => `
+                <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-500 hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800">${item.name}</h3>
+                            <p class="text-blue-600 font-medium">${item.position}</p>
+                            <p class="text-gray-500 text-sm mt-1">📍 ${item.department} | ${item.location}</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+                        <a href="tel:${item.tel}" class="flex items-center text-green-600 font-bold hover:underline">
+                            📞 ${item.tel}
+                        </a>
+                        <span class="text-xs bg-gray-100 text-gray-400 px-2 py-1 rounded">ID: ${item.id}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 3. ฟังก์ชันอัปเดตจำนวนรายการ
+        function updateCount(num) {
+            document.getElementById('resultCount').innerText = `พบทั้งหมด ${num} รายการ`;
+        }
+
+        // 4. ระบบค้นหา (Search Logic)
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const keyword = e.target.value.toLowerCase().trim();
+            
+            const filtered = directoryData.filter(item => {
+                return (
+                    item.name.toLowerCase().includes(keyword) ||
+                    item.department.toLowerCase().includes(keyword) ||
+                    item.position.toLowerCase().includes(keyword) ||
+                    item.tel.includes(keyword) ||
+                    (item.tags && item.tags.some(tag => tag.toLowerCase().includes(keyword)))
+                );
+            });
+
+            renderData(filtered);
+            updateCount(filtered.length);
+        });
+
+        // เริ่มต้นโหลดข้อมูล
+        fetchDirectory();
+    </script>
+</body>
+</html>
